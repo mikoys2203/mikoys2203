@@ -1,0 +1,451 @@
+
+import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+import 'firebase_options.dart';
+
+import 'screens/auth/login_screen.dart';
+
+import 'screens/admin/admin_dashboard.dart';
+import 'screens/restaurant/restaurant_dashboard.dart';
+
+import 'screens/user/user_dashboard.dart';
+import 'screens/user/fitness_onboarding_screen.dart';
+import 'screens/user/fitness_hub_screen.dart';
+import 'screens/user/nutrition_insights_screen.dart';
+import 'screens/user/food_compare_screen.dart';
+import 'screens/user/meal_builder_screen.dart';
+
+// =====================================
+// FIREBASE INITIALIZATION
+// =====================================
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  runApp(const FastFitApp());
+}
+
+class FastFitApp extends StatelessWidget {
+  const FastFitApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'FastFit',
+
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.red,
+        ),
+        scaffoldBackgroundColor: Colors.white,
+        useMaterial3: true,
+      ),
+
+      home: const AuthGate(),
+    );
+  }
+}
+
+// =====================================
+// AUTHENTICATION GATE
+// =====================================
+
+class AuthGate extends StatelessWidget {
+  const AuthGate({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+
+      builder: (context, authSnapshot) {
+        if (authSnapshot.connectionState ==
+            ConnectionState.waiting) {
+          return const LoadingScreen();
+        }
+
+        if (authSnapshot.hasError) {
+          return const AccountIssueScreen(
+            message: 'Authentication error.',
+          );
+        }
+
+        final user = authSnapshot.data;
+
+        if (user == null) {
+          return const LoginScreen();
+        }
+
+        return StreamBuilder<
+            DocumentSnapshot<Map<String, dynamic>>>(
+          stream: FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .snapshots(),
+
+          builder: (context, snapshot) {
+            if (snapshot.connectionState ==
+                ConnectionState.waiting) {
+              return const LoadingScreen();
+            }
+
+            if (snapshot.hasError) {
+              return const AccountIssueScreen(
+                message: 'Unable to load user profile.',
+              );
+            }
+
+            if (!snapshot.hasData ||
+                !snapshot.data!.exists) {
+              return const AccountIssueScreen(
+                message: 'User profile not found.',
+              );
+            }
+
+            final data = snapshot.data!.data()!;
+
+            final role =
+                data['role']?.toString() ?? '';
+
+            final name =
+                data['name']?.toString() ?? 'User';
+
+            final status =
+                data['approvalStatus']?.toString() ??
+                    'pending';
+
+            if (role == 'admin') {
+              return AdminDashboard(name: name);
+            }
+
+            if (role == 'restaurant') {
+              return RestaurantDashboard(
+                name: name,
+                approvalStatus: status,
+              );
+            }
+
+            if (role == 'user') {
+              return CustomerFitnessGate(
+                name: name,
+                userId: user.uid,
+              );
+            }
+
+            return const AccountIssueScreen(
+              message: 'Invalid account role.',
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+// =====================================
+// CUSTOMER ONBOARDING GATE
+// =====================================
+
+class CustomerFitnessGate extends StatelessWidget {
+  final String name;
+  final String userId;
+
+  const CustomerFitnessGate({
+    super.key,
+    required this.name,
+    required this.userId,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<
+        DocumentSnapshot<Map<String, dynamic>>>(
+      stream: FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .collection('fitness_settings')
+          .doc('profile')
+          .snapshots(),
+
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return const AccountIssueScreen(
+            message: 'Unable to load fitness profile.',
+          );
+        }
+
+        if (!snapshot.hasData) {
+          return const LoadingScreen();
+        }
+
+        final profile = snapshot.data!.data();
+
+        final completed =
+            profile?['completed'] == true;
+
+        if (!completed) {
+          return const FitnessOnboardingScreen();
+        }
+
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final mobile = constraints.maxWidth < 800;
+
+            return Stack(
+              children: [
+                UserDashboard(name: name),
+
+                Positioned(
+                  right: 16,
+                  bottom: mobile ? 95 : 22,
+                  child: const FastFitToolsButton(),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+// =====================================
+// CUSTOMER TOOLS MENU
+// =====================================
+
+class FastFitToolsButton extends StatelessWidget {
+  const FastFitToolsButton({super.key});
+
+  void openPage(
+    BuildContext parentContext,
+    BuildContext sheetContext,
+    Widget page,
+  ) {
+    Navigator.pop(sheetContext);
+
+    Navigator.of(parentContext).push(
+      MaterialPageRoute(
+        builder: (context) => page,
+      ),
+    );
+  }
+
+  void showTools(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              16, 0, 16, 20,
+            ),
+
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'FastFit Tools',
+                    style: TextStyle(
+                      fontSize: 23,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  const Text(
+                    'Choose what you want to explore.',
+                  ),
+
+                  const SizedBox(height: 18),
+
+                  ListTile(
+                    leading: const Icon(
+                      Icons.insights,
+                      color: Colors.red,
+                    ),
+                    title: const Text(
+                      'Nutrition Insights',
+                    ),
+                    subtitle: const Text(
+                      'Meal statistics and weekly trends',
+                    ),
+                    trailing:
+                        const Icon(Icons.chevron_right),
+                    onTap: () => openPage(
+                      context,
+                      sheetContext,
+                      const NutritionInsightsScreen(),
+                    ),
+                  ),
+
+                  const Divider(),
+
+                  ListTile(
+                    leading: const Icon(
+                      Icons.compare_arrows,
+                      color: Colors.red,
+                    ),
+                    title: const Text(
+                      'Compare Fast-Food Meals',
+                    ),
+                    subtitle: const Text(
+                      'Compare nutritional information',
+                    ),
+                    trailing:
+                        const Icon(Icons.chevron_right),
+                    onTap: () => openPage(
+                      context,
+                      sheetContext,
+                      const FoodCompareScreen(),
+                    ),
+                  ),
+
+                  const Divider(),
+
+                  ListTile(
+                    leading: const Icon(
+                      Icons.restaurant_menu,
+                      color: Colors.red,
+                    ),
+                    title: const Text(
+                      'Meal Combination Builder',
+                    ),
+                    subtitle: const Text(
+                      'Combine meals and log food',
+                    ),
+                    trailing:
+                        const Icon(Icons.chevron_right),
+                    onTap: () => openPage(
+                      context,
+                      sheetContext,
+                      const MealBuilderScreen(),
+                    ),
+                  ),
+
+                  const Divider(),
+
+                  ListTile(
+                    leading: const Icon(
+                      Icons.fitness_center,
+                      color: Colors.red,
+                    ),
+                    title: const Text(
+                      'Fitness Hub',
+                    ),
+                    subtitle: const Text(
+                      'Workouts, activity and progress',
+                    ),
+                    trailing:
+                        const Icon(Icons.chevron_right),
+                    onTap: () => openPage(
+                      context,
+                      sheetContext,
+                      const FitnessHubScreen(),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FloatingActionButton.extended(
+      heroTag: 'fastfit_tools_v16',
+      backgroundColor: Colors.red.shade700,
+      foregroundColor: Colors.white,
+
+      icon: const Icon(Icons.apps),
+      label: const Text('FastFit Tools'),
+
+      onPressed: () => showTools(context),
+    );
+  }
+}
+
+// =====================================
+// LOADING SCREEN
+// =====================================
+
+class LoadingScreen extends StatelessWidget {
+  const LoadingScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(
+        child: CircularProgressIndicator(
+          color: Colors.red,
+        ),
+      ),
+    );
+  }
+}
+
+// =====================================
+// ACCOUNT ISSUE SCREEN
+// =====================================
+
+class AccountIssueScreen extends StatelessWidget {
+  final String message;
+
+  const AccountIssueScreen({
+    super.key,
+    required this.message,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.error_outline,
+                color: Colors.red,
+                size: 55,
+              ),
+
+              const SizedBox(height: 15),
+
+              Text(
+                message,
+                textAlign: TextAlign.center,
+              ),
+
+              const SizedBox(height: 20),
+
+              ElevatedButton(
+                onPressed: () async {
+                  await FirebaseAuth.instance.signOut();
+                },
+                child: const Text('Log out'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "518736315439",
+    "project_id": "fastfit-project",
+    "storage_bucket": "fastfit-project.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:518736315439:android:8908665bb2b95e2aca72da",
+        "android_client_info": {
+          "package_name": "com.example.fastfit"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBfEQg40n25qbzGIZq1rDRaFl1Ze7082jc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
