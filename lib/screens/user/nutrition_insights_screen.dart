@@ -186,7 +186,11 @@ class _NutritionInsightsScreenState
     for (final doc in logs) {
       final log = doc.data();
 
-      final timestamp = log['loggedAt'];
+      // Pending Firestore writes may not have a server timestamp yet.
+      // The client timestamp keeps the newest day visible immediately.
+      final timestamp = log['loggedAt'] is Timestamp
+          ? log['loggedAt']
+          : log['loggedAtClient'];
 
       if (timestamp is! Timestamp) continue;
 
@@ -217,16 +221,25 @@ class _NutritionInsightsScreenState
       foodCounts[foodName] =
           (foodCounts[foodName] ?? 0) + quantity;
 
-      final food = foodMap[foodId];
-
-      if (food == null) {
-        missingNutrition++;
-        continue;
+      // New logs store nutrition at the time they were recorded. This
+      // preserves their totals if a restaurant edits or removes its menu.
+      // Older logs still fall back to the current approved food record.
+      final hasSavedMacros = log['protein'] is num &&
+          log['carbohydrates'] is num && log['fats'] is num;
+      if (hasSavedMacros) {
+        totalProtein += number(log['protein']);
+        totalCarbs += number(log['carbohydrates']);
+        totalFats += number(log['fats']);
+      } else {
+        final food = foodMap[foodId];
+        if (food == null) {
+          missingNutrition++;
+          continue;
+        }
+        totalProtein += number(food['protein']) * quantity;
+        totalCarbs += number(food['carbohydrates']) * quantity;
+        totalFats += number(food['fats']) * quantity;
       }
-
-      totalProtein += number(food['protein']) * quantity;
-      totalCarbs += number(food['carbohydrates']) * quantity;
-      totalFats += number(food['fats']) * quantity;
     }
 
     final topFoods = foodCounts.entries.toList()
@@ -337,8 +350,8 @@ class _NutritionInsightsScreenState
         const SizedBox(height: 8),
 
         const Text(
-          'Calculated from the currently approved '
-          'nutrition information for logged foods.',
+          'New meal logs keep the nutrition recorded at the time of eating. '
+          'Older logs may use current menu information.',
         ),
 
         const SizedBox(height: 15),
@@ -426,8 +439,7 @@ class _NutritionInsightsScreenState
           'Important: These totals only include meals '
           'recorded in FastFit, not everything you may '
           'have eaten. They are not a complete dietary '
-          'assessment. Nutritional values can also change '
-          'when a restaurant updates its menu.',
+          'assessment. Nutrition estimates are approximate.',
           style: TextStyle(
             color: Colors.grey,
             fontSize: 12,

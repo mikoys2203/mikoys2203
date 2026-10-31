@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -18,57 +17,40 @@ class _NutritionTransparencyScreenState
     extends State<NutritionTransparencyScreen> {
   String search = '';
 
-  final NutritionReviewService nutrition =
-      NutritionReviewService();
+  final NutritionReviewService nutrition = NutritionReviewService();
 
   Future<void> openSource(String text) async {
     final uri = Uri.tryParse(text);
 
-    if (uri == null ||
-        uri.scheme != 'https' ||
-        uri.host.isEmpty) {
+    if (uri == null || uri.scheme != 'https' || uri.host.isEmpty) {
       return;
     }
 
     try {
-      final opened = await launchUrl(
-        uri,
-        mode: LaunchMode.externalApplication,
-      );
+      final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
 
       if (!opened && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Unable to open the source.'),
-          ),
+          const SnackBar(content: Text('Unable to open the source.')),
         );
       }
     } catch (e) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Link error: $e')),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Link error: $e')));
     }
   }
 
-  Widget foodCard(
-    String foodId,
-    Map<String, dynamic> food,
-  ) {
-    return StreamBuilder<
-        DocumentSnapshot<Map<String, dynamic>>>(
+  Widget foodCard(String foodId, Map<String, dynamic> food) {
+    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
       stream: nutrition.sourceForFood(foodId),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
           return Card(
             child: ListTile(
-              title: Text(
-                food['name']?.toString() ?? 'Food',
-              ),
-              subtitle: const Text(
-                'Source information is unavailable.',
-              ),
+              title: Text(food['name']?.toString() ?? 'Food'),
+              subtitle: const Text('Source information is unavailable.'),
             ),
           );
         }
@@ -83,32 +65,27 @@ class _NutritionTransparencyScreenState
         }
 
         // The source may be null if no document exists.
-        final Map<String, dynamic>? source =
-            snapshot.data!.data();
+        final Map<String, dynamic>? source = snapshot.data!.data();
 
-        final bool reviewed =
-            NutritionReviewService.isCurrentReviewedSource(
+        final bool reviewed = NutritionReviewService.isCurrentReviewedSource(
           food,
           source,
         );
 
-        final bool stale = source != null &&
-            source['reviewStatus'] == 'approved' &&
-            !reviewed;
+        final bool stale =
+            source != null && source['reviewStatus'] == 'approved' && !reviewed;
 
-        final String sourceUrl =
-            source?['sourceUrl']?.toString() ?? '';
+        final String sourceUrl = source?['sourceUrl']?.toString() ?? '';
 
         final String statusText = reviewed
             ? 'Source reviewed - current'
             : stale
-                ? 'Previously reviewed - food data changed'
-                : source == null
-                    ? 'No nutrition source submitted'
-                    : 'Source review not currently approved';
+            ? 'Previously reviewed - food data changed'
+            : source == null
+            ? 'No nutrition source submitted'
+            : 'Source review not currently approved';
 
-        final Color statusColor =
-            reviewed ? Colors.green : Colors.orange;
+        final Color statusColor = reviewed ? Colors.green : Colors.orange;
 
         return Card(
           margin: const EdgeInsets.only(bottom: 12),
@@ -127,9 +104,7 @@ class _NutritionTransparencyScreenState
 
                 const SizedBox(height: 8),
 
-                Text(
-                  'Serving size: ${food['servingSize']}',
-                ),
+                Text('Serving size: ${food['servingSize']}'),
 
                 const SizedBox(height: 5),
 
@@ -139,9 +114,7 @@ class _NutritionTransparencyScreenState
                   children: [
                     Text('${food['calories']} kcal'),
                     Text('Protein: ${food['protein']} g'),
-                    Text(
-                      'Carbs: ${food['carbohydrates']} g',
-                    ),
+                    Text('Carbs: ${food['carbohydrates']} g'),
                     Text('Fat: ${food['fats']} g'),
                   ],
                 ),
@@ -151,9 +124,7 @@ class _NutritionTransparencyScreenState
                 Row(
                   children: [
                     Icon(
-                      reviewed
-                          ? Icons.verified_outlined
-                          : Icons.info_outline,
+                      reviewed ? Icons.verified_outlined : Icons.info_outline,
                       color: statusColor,
                     ),
 
@@ -175,13 +146,9 @@ class _NutritionTransparencyScreenState
                 if (reviewed && source != null) ...[
                   const SizedBox(height: 10),
 
-                  Text(
-                    'Source type: ${source['sourceType']}',
-                  ),
+                  Text('Source type: ${source['sourceType']}'),
 
-                  if ((source['sourceNote'] ?? '')
-                      .toString()
-                      .isNotEmpty)
+                  if ((source['sourceNote'] ?? '').toString().isNotEmpty)
                     Text(
                       'Source details: '
                       '${source['sourceNote']}',
@@ -191,9 +158,7 @@ class _NutritionTransparencyScreenState
 
                   OutlinedButton.icon(
                     icon: const Icon(Icons.open_in_new),
-                    label: const Text(
-                      'View Nutrition Source',
-                    ),
+                    label: const Text('View Nutrition Source'),
                     onPressed: sourceUrl.isEmpty
                         ? null
                         : () => openSource(sourceUrl),
@@ -216,29 +181,19 @@ class _NutritionTransparencyScreenState
         foregroundColor: Colors.white,
       ),
 
-      body: StreamBuilder<
-          QuerySnapshot<Map<String, dynamic>>>(
+      body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
         stream: FoodService().approvedFoods(),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
-            return Center(
-              child: Text(
-                'Food error: ${snapshot.error}',
-              ),
-            );
+            return Center(child: Text('Food error: ${snapshot.error}'));
           }
 
           if (!snapshot.hasData) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
+            return const Center(child: CircularProgressIndicator());
           }
 
           final foods = snapshot.data!.docs.where((doc) {
-            final name = doc.data()['name']
-                    ?.toString()
-                    .toLowerCase() ??
-                '';
+            final name = doc.data()['name']?.toString().toLowerCase() ?? '';
 
             return name.contains(search);
           }).toList();
@@ -248,8 +203,7 @@ class _NutritionTransparencyScreenState
               Padding(
                 padding: const EdgeInsets.all(18),
                 child: Column(
-                  crossAxisAlignment:
-                      CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
                       'Where Does Your Food Data Come From?',
@@ -287,23 +241,14 @@ class _NutritionTransparencyScreenState
 
               Expanded(
                 child: foods.isEmpty
-                    ? const Center(
-                        child: Text(
-                          'No matching food items.',
-                        ),
-                      )
+                    ? const Center(child: Text('No matching food items.'))
                     : ListView.builder(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 18,
-                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 18),
                         itemCount: foods.length,
                         itemBuilder: (context, index) {
                           final food = foods[index];
 
-                          return foodCard(
-                            food.id,
-                            food.data(),
-                          );
+                          return foodCard(food.id, food.data());
                         },
                       ),
               ),
@@ -316,10 +261,7 @@ class _NutritionTransparencyScreenState
                   'original source and serving size '
                   'where possible.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey,
-                  ),
+                  style: TextStyle(fontSize: 12, color: Colors.grey),
                 ),
               ),
             ],

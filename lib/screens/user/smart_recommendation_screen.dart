@@ -132,6 +132,9 @@ class _SmartRecommendationScreenState extends State<SmartRecommendationScreen>
         restaurantName: suggestion.restaurantName,
         calories: FoodRecommendationEngine.amount(suggestion.food['calories']),
         quantity: quantity,
+        protein: FoodRecommendationEngine.amount(suggestion.food['protein']),
+        carbohydrates: FoodRecommendationEngine.amount(suggestion.food['carbohydrates']),
+        fats: FoodRecommendationEngine.amount(suggestion.food['fats']),
       );
       notice('Meal saved to your history.');
     } catch (error) {
@@ -394,7 +397,7 @@ class _SmartRecommendationScreenState extends State<SmartRecommendationScreen>
             child: Text(
               'Recommendations compare calories and protein within the available menu. '
               'They are not a medical or dietary prescription. Consider serving size, '
-              'variety, allergies, and verified nutrition sources.',
+              'variety, allergies, and the accuracy of available menu nutrition estimates.',
             ),
           ),
         ),
@@ -875,13 +878,42 @@ class _SmartRecommendationScreenState extends State<SmartRecommendationScreen>
       fitnessGoal: goal,
     );
 
-    return TabBarView(
-      controller: tabs,
+    final targetSource = settings['targetWeightKg'];
+    final targetWeight = targetSource is num && targetSource > 0
+        ? targetSource.toDouble() : 0.0;
+
+    return Column(
       children: [
-        _foodRecommendations(ranked, goal),
-        _exerciseTab(ranked, weight, level),
-        _weeklyPlan(level, weight),
-        _todayPanel(),
+        Container(
+          width: double.infinity,
+          color: const Color(0xFFFFF4F4),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          child: Wrap(
+            spacing: 18,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Text('Goal: ${_goalName(goal)}', style: const TextStyle(
+                fontWeight: FontWeight.bold, color: Color(0xFFC62828))),
+              if (weight > 0)
+                Text('Current: ${weight.toStringAsFixed(1)} kg'),
+              if (targetWeight > 0)
+                Text('Target: ${targetWeight.toStringAsFixed(1)} kg'),
+              Text('Activity level: $level'),
+            ],
+          ),
+        ),
+        Expanded(
+          child: TabBarView(
+            controller: tabs,
+            children: [
+              _foodRecommendations(ranked, goal),
+              _exerciseTab(ranked, weight, level),
+              _weeklyPlan(level, weight),
+              _todayPanel(),
+            ],
+          ),
+        ),
       ],
     );
   }

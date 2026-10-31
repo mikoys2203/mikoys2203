@@ -1,5 +1,4 @@
-﻿
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../services/nutrition_review_service.dart';
@@ -17,20 +16,15 @@ class NutritionEvidenceScreen extends StatelessWidget {
         backgroundColor: Colors.red.shade700,
         foregroundColor: Colors.white,
       ),
-      body: StreamBuilder<
-          QuerySnapshot<Map<String, dynamic>>>(
+      body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
         stream: service.myFoods(),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
-            return Center(
-              child: Text('Error: ${snapshot.error}'),
-            );
+            return Center(child: Text('Error: ${snapshot.error}'));
           }
 
           if (!snapshot.hasData) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
+            return const Center(child: CircularProgressIndicator());
           }
 
           final foods = snapshot.data!.docs;
@@ -40,10 +34,7 @@ class NutritionEvidenceScreen extends StatelessWidget {
             children: [
               const Text(
                 'Food Nutrition Sources',
-                style: TextStyle(
-                  fontSize: 25,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
               const Text(
@@ -56,17 +47,12 @@ class NutritionEvidenceScreen extends StatelessWidget {
                 const Card(
                   child: Padding(
                     padding: EdgeInsets.all(24),
-                    child: Text(
-                      'Create a food item in Manage Menu first.',
-                    ),
+                    child: Text('Create a food item in Manage Menu first.'),
                   ),
                 ),
 
               for (final doc in foods)
-                _EvidenceFoodCard(
-                  foodId: doc.id,
-                  food: doc.data(),
-                ),
+                _EvidenceFoodCard(foodId: doc.id, food: doc.data()),
             ],
           );
         },
@@ -79,17 +65,13 @@ class _EvidenceFoodCard extends StatelessWidget {
   final String foodId;
   final Map<String, dynamic> food;
 
-  const _EvidenceFoodCard({
-    required this.foodId,
-    required this.food,
-  });
+  const _EvidenceFoodCard({required this.foodId, required this.food});
 
   @override
   Widget build(BuildContext context) {
     final service = NutritionReviewService();
 
-    return StreamBuilder<
-        DocumentSnapshot<Map<String, dynamic>>>(
+    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
       stream: service.sourceForFood(foodId),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
@@ -102,11 +84,9 @@ class _EvidenceFoodCard extends StatelessWidget {
         }
 
         final source = snapshot.data?.data();
-        final status =
-            source?['reviewStatus']?.toString() ?? 'not submitted';
+        final status = source?['reviewStatus']?.toString() ?? 'not submitted';
 
-        final current =
-            NutritionReviewService.isCurrentReviewedSource(
+        final current = NutritionReviewService.isCurrentReviewedSource(
           food,
           source,
         );
@@ -134,19 +114,15 @@ class _EvidenceFoodCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 6),
-                Text(
-                  'Serving: ${food['servingSize']}',
-                ),
-                Text(
-                  'Calories: ${food['calories']} kcal',
-                ),
+                Text('Serving: ${food['servingSize']}'),
+                Text('Calories: ${food['calories']} kcal'),
                 const SizedBox(height: 10),
                 Text(
                   current
                       ? 'Source reviewed â€” current'
                       : status == 'approved'
-                          ? 'Source review is outdated'
-                          : 'Source status: $status',
+                      ? 'Source review is outdated'
+                      : 'Source status: $status',
                   style: TextStyle(
                     color: statusColor,
                     fontWeight: FontWeight.bold,
@@ -159,11 +135,8 @@ class _EvidenceFoodCard extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  if ((source['reviewNote'] ?? '')
-                      .toString().isNotEmpty)
-                    Text(
-                      'Admin note: ${source['reviewNote']}',
-                    ),
+                  if ((source['reviewNote'] ?? '').toString().isNotEmpty)
+                    Text('Admin note: ${source['reviewNote']}'),
                 ],
                 const SizedBox(height: 14),
                 OutlinedButton.icon(
@@ -178,8 +151,7 @@ class _EvidenceFoodCard extends StatelessWidget {
                       context: context,
                       builder: (_) => _EvidenceFormDialog(
                         foodId: foodId,
-                        foodName: food['name']?.toString() ??
-                            'Food',
+                        foodName: food['name']?.toString() ?? 'Food',
                         existing: source,
                       ),
                     );
@@ -206,12 +178,10 @@ class _EvidenceFormDialog extends StatefulWidget {
   });
 
   @override
-  State<_EvidenceFormDialog> createState() =>
-      _EvidenceFormDialogState();
+  State<_EvidenceFormDialog> createState() => _EvidenceFormDialogState();
 }
 
-class _EvidenceFormDialogState
-    extends State<_EvidenceFormDialog> {
+class _EvidenceFormDialogState extends State<_EvidenceFormDialog> {
   final formKey = GlobalKey<FormState>();
   final service = NutritionReviewService();
 
@@ -233,11 +203,9 @@ class _EvidenceFormDialogState
       text: widget.existing?['sourceNote']?.toString() ?? '',
     );
 
-    sourceType =
-        widget.existing?['sourceType']?.toString() ?? 'official';
+    sourceType = widget.existing?['sourceType']?.toString() ?? 'official';
 
-    if (!['official', 'packaging', 'other']
-        .contains(sourceType)) {
+    if (!['official', 'packaging', 'other'].contains(sourceType)) {
       sourceType = 'other';
     }
   }
@@ -267,9 +235,8 @@ class _EvidenceFormDialogState
     } catch (e) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Submission failed: $e')),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Submission failed: $e')));
     } finally {
       if (mounted) setState(() => saving = false);
     }
@@ -339,8 +306,7 @@ class _EvidenceFormDialogState
                   maxLength: 600,
                   decoration: const InputDecoration(
                     labelText: 'Source Explanation',
-                    hintText:
-                        'Explain where the nutrition values came from.',
+                    hintText: 'Explain where the nutrition values came from.',
                     border: OutlineInputBorder(),
                   ),
                 ),
@@ -368,4 +334,3 @@ class _EvidenceFormDialogState
     );
   }
 }
-

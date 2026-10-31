@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -9,12 +8,10 @@ class NutritionReviewScreen extends StatefulWidget {
   const NutritionReviewScreen({super.key});
 
   @override
-  State<NutritionReviewScreen> createState() =>
-      _NutritionReviewScreenState();
+  State<NutritionReviewScreen> createState() => _NutritionReviewScreenState();
 }
 
-class _NutritionReviewScreenState
-    extends State<NutritionReviewScreen> {
+class _NutritionReviewScreenState extends State<NutritionReviewScreen> {
   final service = NutritionReviewService();
 
   String filter = 'pending';
@@ -26,37 +23,25 @@ class _NutritionReviewScreenState
     if (uri == null || uri.scheme != 'https') return;
 
     try {
-      final opened = await launchUrl(
-        uri,
-        mode: LaunchMode.externalApplication,
-      );
+      final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
 
       if (!opened && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Unable to open the source URL.'),
-          ),
+          const SnackBar(content: Text('Unable to open the source URL.')),
         );
       }
     } catch (e) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Unable to open source: $e')),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Unable to open source: $e')));
     }
   }
 
-  Future<void> showReviewDialog(
-    String foodId,
-    String decision,
-  ) async {
+  Future<void> showReviewDialog(String foodId, String decision) async {
     await showDialog(
       context: context,
-      builder: (_) => _ReviewDecisionDialog(
-        foodId: foodId,
-        decision: decision,
-      ),
+      builder: (_) => _ReviewDecisionDialog(foodId: foodId, decision: decision),
     );
   }
 
@@ -68,8 +53,7 @@ class _NutritionReviewScreenState
         content: SizedBox(
           width: 500,
           height: 330,
-          child: StreamBuilder<
-              QuerySnapshot<Map<String, dynamic>>>(
+          child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
             stream: service.reviewHistory(foodId),
             builder: (context, snapshot) {
               if (snapshot.hasError) {
@@ -77,17 +61,13 @@ class _NutritionReviewScreenState
               }
 
               if (!snapshot.hasData) {
-                return const Center(
-                  child: CircularProgressIndicator(),
-                );
+                return const Center(child: CircularProgressIndicator());
               }
 
               final reviews = snapshot.data!.docs;
 
               if (reviews.isEmpty) {
-                return const Center(
-                  child: Text('No previous reviews.'),
-                );
+                return const Center(child: Text('No previous reviews.'));
               }
 
               return ListView.builder(
@@ -110,12 +90,9 @@ class _NutritionReviewScreenState
                           : Colors.red,
                     ),
                     title: Text(
-                      data['decision']?.toString().toUpperCase() ??
-                          'REVIEW',
+                      data['decision']?.toString().toUpperCase() ?? 'REVIEW',
                     ),
-                    subtitle: Text(
-                      '${data['note'] ?? ''}\n$time',
-                    ),
+                    subtitle: Text('${data['note'] ?? ''}\n$time'),
                     isThreeLine: true,
                   );
                 },
@@ -133,15 +110,10 @@ class _NutritionReviewScreenState
     );
   }
 
-  Widget sourceCard(
-    String foodId,
-    Map<String, dynamic> source,
-  ) {
-    final status =
-        source['reviewStatus']?.toString() ?? 'pending';
+  Widget sourceCard(String foodId, Map<String, dynamic> source) {
+    final status = source['reviewStatus']?.toString() ?? 'pending';
 
-    final sourceUrl =
-        source['sourceUrl']?.toString() ?? '';
+    final sourceUrl = source['sourceUrl']?.toString() ?? '';
 
     return Card(
       margin: const EdgeInsets.only(bottom: 13),
@@ -150,8 +122,7 @@ class _NutritionReviewScreenState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            StreamBuilder<
-                DocumentSnapshot<Map<String, dynamic>>>(
+            StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
               stream: FirebaseFirestore.instance
                   .collection('food_items')
                   .doc(foodId)
@@ -174,11 +145,9 @@ class _NutritionReviewScreenState
             const SizedBox(height: 8),
             Text('URL: $sourceUrl'),
             const SizedBox(height: 10),
-            if ((source['sourceNote'] ?? '')
-                .toString().isNotEmpty)
+            if ((source['sourceNote'] ?? '').toString().isNotEmpty)
               Text('Restaurant note: ${source['sourceNote']}'),
-            if ((source['reviewNote'] ?? '')
-                .toString().isNotEmpty) ...[
+            if ((source['reviewNote'] ?? '').toString().isNotEmpty) ...[
               const SizedBox(height: 8),
               Text('Review note: ${source['reviewNote']}'),
             ],
@@ -201,8 +170,7 @@ class _NutritionReviewScreenState
                 ),
                 if (status == 'pending') ...[
                   ElevatedButton.icon(
-                    onPressed: () =>
-                        showReviewDialog(foodId, 'approved'),
+                    onPressed: () => showReviewDialog(foodId, 'approved'),
                     icon: const Icon(Icons.check),
                     label: const Text('Approve Source'),
                     style: ElevatedButton.styleFrom(
@@ -211,8 +179,7 @@ class _NutritionReviewScreenState
                     ),
                   ),
                   OutlinedButton.icon(
-                    onPressed: () =>
-                        showReviewDialog(foodId, 'rejected'),
+                    onPressed: () => showReviewDialog(foodId, 'rejected'),
                     icon: const Icon(Icons.close),
                     label: const Text('Reject Source'),
                     style: OutlinedButton.styleFrom(
@@ -236,31 +203,26 @@ class _NutritionReviewScreenState
         backgroundColor: Colors.red.shade700,
         foregroundColor: Colors.white,
       ),
-      body: StreamBuilder<
-          QuerySnapshot<Map<String, dynamic>>>(
+      body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
         stream: service.allSources(),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
-            return Center(
-              child: Text('Error: ${snapshot.error}'),
-            );
+            return Center(child: Text('Error: ${snapshot.error}'));
           }
 
           if (!snapshot.hasData) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
+            return const Center(child: CircularProgressIndicator());
           }
 
           final sources = snapshot.data!.docs.where((doc) {
             final data = doc.data();
 
-            final matchesStatus = filter == 'all' ||
-                data['reviewStatus'] == filter;
+            final matchesStatus =
+                filter == 'all' || data['reviewStatus'] == filter;
 
             final searchable =
                 '${doc.id} ${data['sourceUrl']} '
-                '${data['sourceType']} ${data['sourceNote']}'
+                        '${data['sourceType']} ${data['sourceNote']}'
                     .toLowerCase();
 
             return matchesStatus && searchable.contains(search);
@@ -303,7 +265,10 @@ class _NutritionReviewScreenState
                       spacing: 8,
                       children: [
                         for (final value in [
-                          'pending', 'approved', 'rejected', 'all'
+                          'pending',
+                          'approved',
+                          'rejected',
+                          'all',
                         ])
                           ChoiceChip(
                             label: Text(value.toUpperCase()),
@@ -323,9 +288,7 @@ class _NutritionReviewScreenState
                         child: Text('No matching source submissions.'),
                       )
                     : ListView.builder(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 18,
-                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 18),
                         itemCount: sources.length,
                         itemBuilder: (context, index) {
                           final doc = sources[index];
@@ -346,18 +309,13 @@ class _ReviewDecisionDialog extends StatefulWidget {
   final String foodId;
   final String decision;
 
-  const _ReviewDecisionDialog({
-    required this.foodId,
-    required this.decision,
-  });
+  const _ReviewDecisionDialog({required this.foodId, required this.decision});
 
   @override
-  State<_ReviewDecisionDialog> createState() =>
-      _ReviewDecisionDialogState();
+  State<_ReviewDecisionDialog> createState() => _ReviewDecisionDialogState();
 }
 
-class _ReviewDecisionDialogState
-    extends State<_ReviewDecisionDialog> {
+class _ReviewDecisionDialogState extends State<_ReviewDecisionDialog> {
   final controller = TextEditingController();
   bool saving = false;
 
@@ -370,9 +328,7 @@ class _ReviewDecisionDialogState
   Future<void> submit() async {
     if (controller.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please explain your decision.'),
-        ),
+        const SnackBar(content: Text('Please explain your decision.')),
       );
       return;
     }
@@ -391,9 +347,8 @@ class _ReviewDecisionDialogState
     } catch (e) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Review failed: $e')),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Review failed: $e')));
     } finally {
       if (mounted) setState(() => saving = false);
     }
@@ -426,9 +381,7 @@ class _ReviewDecisionDialogState
         ),
         ElevatedButton(
           onPressed: saving ? null : submit,
-          child: Text(
-            saving ? 'Saving...' : 'Confirm Decision',
-          ),
+          child: Text(saving ? 'Saving...' : 'Confirm Decision'),
         ),
       ],
     );

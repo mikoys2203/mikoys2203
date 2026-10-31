@@ -140,7 +140,11 @@ class _MealBuilderScreenState extends State<MealBuilderScreen> {
           'foodName': food['name']?.toString() ?? 'Food',
           'restaurantName': restaurantName,
           'calories': calories * quantity,
+          'protein': number(food['protein']) * quantity,
+          'carbohydrates': number(food['carbohydrates']) * quantity,
+          'fats': number(food['fats']) * quantity,
           'quantity': quantity,
+          'loggedAtClient': Timestamp.fromDate(DateTime.now().toUtc()),
           'loggedAt': FieldValue.serverTimestamp(),
         });
       }

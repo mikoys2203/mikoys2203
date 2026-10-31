@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../services/fitness_service.dart';
 import 'fitness_onboarding_screen.dart';
+import 'home_workouts_screen.dart';
 
 class FitnessHubScreen extends StatefulWidget {
   const FitnessHubScreen({super.key});
@@ -343,6 +344,8 @@ class _FitnessHubScreenState extends State<FitnessHubScreen> {
         final calorieText = calories is num
             ? calories.toStringAsFixed(0)
             : '0';
+        final suggestedFood = data['suggestedFromFood']?.toString() ?? '';
+        final workoutDetails = '$dateLabel • ${data['minutes']} minutes';
 
         return Card(
           child: ListTile(
@@ -360,7 +363,9 @@ class _FitnessHubScreenState extends State<FitnessHubScreen> {
             ),
 
             subtitle: Text(
-              '$dateLabel • ${data['minutes']} minutes',
+              suggestedFood.isEmpty
+                  ? workoutDetails
+                  : '$workoutDetails\nSuggested while viewing: $suggestedFood',
             ),
 
             trailing: Row(
@@ -619,6 +624,16 @@ class _FitnessHubScreenState extends State<FitnessHubScreen> {
 
               const SizedBox(height: 24),
 
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  icon: const Icon(Icons.home_rounded),
+                  label: const Text('Explore home workout routines'),
+                  onPressed: () => Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => const HomeWorkoutsScreen())),
+                ),
+              ),
+              const SizedBox(height: 24),
               const Text(
                 'Workout History',
                 style: TextStyle(

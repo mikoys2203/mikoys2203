@@ -75,6 +75,46 @@ class FitnessService {
       minimumLevel: 'intermediate',
     ),
     FitnessActivity(
+      id: 'stretch',
+      name: 'Gentle Stretching',
+      description: 'Easy mobility and relaxed stretching at home',
+      met: 2.3,
+      icon: Icons.self_improvement_rounded,
+      minimumLevel: 'beginner',
+    ),
+    FitnessActivity(
+      id: 'home_beginner',
+      name: 'Beginner Home Workout',
+      description: 'Easy squats, wall push-ups and guided movement',
+      met: 3.0,
+      icon: Icons.home_rounded,
+      minimumLevel: 'beginner',
+    ),
+    FitnessActivity(
+      id: 'yoga',
+      name: 'Yoga & Mobility',
+      description: 'Gentle yoga and mobility practice',
+      met: 2.5,
+      icon: Icons.spa_outlined,
+      minimumLevel: 'beginner',
+    ),
+    FitnessActivity(
+      id: 'core',
+      name: 'Core Workout',
+      description: 'Controlled planks, dead bugs and core stability',
+      met: 3.5,
+      icon: Icons.accessibility_new_rounded,
+      minimumLevel: 'intermediate',
+    ),
+    FitnessActivity(
+      id: 'home_strength',
+      name: 'At-Home Strength',
+      description: 'Full-body strength routine with no gym needed',
+      met: 4.5,
+      icon: Icons.fitness_center_rounded,
+      minimumLevel: 'intermediate',
+    ),
+    FitnessActivity(
       id: 'jog',
       name: 'Jogging',
       description: 'Steady jogging at a comfortable pace',
@@ -180,6 +220,7 @@ class FitnessService {
     required FitnessActivity activity,
     required int minutes,
     required double weightKg,
+    String? suggestedFromFood,
   }) async {
     if (minutes < 5 || minutes > 180 ||
         weightKg <= 0 || weightKg > 500) {
@@ -198,6 +239,8 @@ class FitnessService {
       'minutes': minutes,
       'met': activity.met,
       'estimatedCalories': calories,
+      if (suggestedFromFood != null && suggestedFromFood.trim().isNotEmpty)
+        'suggestedFromFood': suggestedFromFood.trim(),
       'completedAt': FieldValue.serverTimestamp(),
     });
   }

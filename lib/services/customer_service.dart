@@ -77,13 +77,22 @@ class CustomerService {
     required String restaurantName,
     required double calories,
     required int quantity,
+    double? protein,
+    double? carbohydrates,
+    double? fats,
   }) async {
     await mealLogsRef.add({
       'foodId': foodId,
       'foodName': foodName,
       'restaurantName': restaurantName,
       'calories': calories * quantity,
+      if (protein != null) 'protein': protein * quantity,
+      if (carbohydrates != null) 'carbohydrates': carbohydrates * quantity,
+      if (fats != null) 'fats': fats * quantity,
       'quantity': quantity,
+      // Client timestamp lets the current-day chart update immediately;
+      // the server timestamp becomes authoritative after synchronization.
+      'loggedAtClient': Timestamp.fromDate(DateTime.now().toUtc()),
       'loggedAt': FieldValue.serverTimestamp(),
     });
   }
